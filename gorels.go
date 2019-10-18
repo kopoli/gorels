@@ -74,6 +74,7 @@ func cmdStrOneLine(args ...string) string {
 type Git struct {
 	Git    string
 	Commit string
+	TagPrefix string
 	Tags   []string
 	DryRun bool
 }
@@ -126,34 +127,58 @@ func newVersionData(opts options.Options) *versionData {
 		git: Git{
 			Git:    "git",
 			Commit: "HEAD",
+			TagPrefix: "v",
 			DryRun: opts.IsSet("dryrun"),
 		},
 	}
 	t := make(opMap)
 
+	debugPrint := func(args... interface{}) {
+		if ! ret.debug {
+			return
+		}
+		fmt.Printf(">> ")
+		fmt.Println(args...)
+	}
+
 	t.add("git=", "Git program to use.", func(s string) {
+		debugPrint("Setting git to", s)
 		ret.git.Git = s
 	})
 	t.add("bump-major", "Bump the major version number.", func(s string) {
+		debugPrint("Bumping major version")
 		ret.err = ret.version.BumpMajor()
 	})
 	t.add("bump-minor", "Bump the minor version number.", func(s string) {
+		debugPrint("Bumping minor version")
 		ret.err = ret.version.BumpMinor()
 	})
 	t.add("bump-patch", "Bump the patch level version number.", func(s string) {
+		debugPrint("Bumping patch level")
 		ret.err = ret.version.BumpPatch()
 	})
 	t.add("set-version=", "Set explicit version.", func(s string) {
+		debugPrint("Setting version to", s)
 		ret.err = ret.version.Set(s)
 	})
 	t.add("commit=", "Commit to operate on. Default: HEAD", func(s string) {
+		debugPrint("Setting git commit to:", s)
 		ret.git.Commit = s
 	})
 	t.add("message=", "Message to inject into the tag", func(s string) {
+		debugPrint("Injecting message to tag:", s)
 		ret.message = s
 	})
+	t.add("set-tag-prefix=", "Set tag prefix. Default 'v'.", func(s string) {
+		debugPrint("Setting the tag prefix to:", s)
+		ret.git.TagPrefix = s
+	})
 	t.add("tag", "Create a tag.", func(s string) {
-
+		verstr := ret.git.TagPrefix + ret.version.String()
+		debugPrint("Creating the git tag:", verstr)
+		if ret.message != "" {
+			debugPrint("Injecting message:", ret.message)
+		}
 		ret.message = ""
 	})
 	t.add("amend", "Amend the current tag.", func(s string) {
@@ -163,11 +188,49 @@ func newVersionData(opts options.Options) *versionData {
 	return ret
 }
 
+func parseOp(name string) string {
+	return strings.SplitAfter(name, "=")[0]
+}
+
 func (v *versionData) checkOperations(operations ...string) error {
-	return nil
+	inv := make(map[string]bool)
+
+	for i := range operations {
+		n := parseOp(operations[i])
+		if _, ok := v.operations[n]; !ok {
+			inv[n] = true
+		}
+	}
+
+	suffix := "s"
+	switch len(inv) {
+	case 0:
+		return nil
+	case 1:
+		suffix = ""
+	}
+	var invalid []string
+	for k := range inv {
+		invalid = append(invalid, k)
+	}
+
+	return fmt.Errorf("Invalid operation%s: %s", suffix, strings.Join(invalid, ", "))
 }
 
 func (v *versionData) apply(operations ...string) error {
+	for i := range operations {
+		n := parseOp(operations[i])
+		if t, ok := v.operations[n]; ok {
+			arg := ""
+			if strings.Index(n, "=") != -1 {
+				arg = strings.SplitN(operations[i], "=", 2)[1]
+			}
+			t.op(arg)
+			if v.err != nil {
+				return fmt.Errorf("Operation \"%s\" failed with: %v", operations[i], v.err)
+			}
+		}
+	}
 	return nil
 }
 
@@ -193,7 +256,6 @@ func main() {
 	optList := fs.Bool("list", false, "List operations.")
 	optDebug := fs.Bool("debug", false, "Enable debug output.")
 	optDryRun := fs.Bool("dryrun", false, "Don't actually run any operations. Implies -debug.")
-	optVersionPrefix := fs.String("version-prefix", "v", "String prefix to be stripped when evaluating git version tags.")
 
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, "%s: Tag commits with semantic versions\n\n", os.Args[0])
@@ -217,8 +279,6 @@ func main() {
 		opts.Set("dryrun", "t")
 	}
 
-	opts.Set("version-prefix", *optVersionPrefix)
-
 	vd := newVersionData(opts)
 
 	if *optList {
@@ -233,6 +293,9 @@ func main() {
 
 	err = vd.checkOperations(args...)
 	fault(err, "Validating given operations failed")
+
+	err = vd.apply(args...)
+	fault(err, "Applying operations failed")
 
 	vd.git.GetTags()
 	fmt.Println(vd.git.Tags)
