@@ -72,11 +72,11 @@ func cmdStrOneLine(args ...string) string {
 }
 
 type Git struct {
-	Git    string
-	Commit string
+	Git       string
+	Commit    string
 	TagPrefix string
-	Tags   []string
-	DryRun bool
+	Tags      []string
+	DryRun    bool
 }
 
 func (g *Git) GetTags() error {
@@ -125,16 +125,16 @@ func newVersionData(opts options.Options) *versionData {
 	ret := &versionData{
 		debug: opts.IsSet("debug"),
 		git: Git{
-			Git:    "git",
-			Commit: "HEAD",
+			Git:       "git",
+			Commit:    "HEAD",
 			TagPrefix: "v",
-			DryRun: opts.IsSet("dryrun"),
+			DryRun:    opts.IsSet("dryrun"),
 		},
 	}
 	t := make(opMap)
 
-	debugPrint := func(args... interface{}) {
-		if ! ret.debug {
+	debugPrint := func(args ...interface{}) {
+		if !ret.debug {
 			return
 		}
 		fmt.Printf(">> ")
@@ -214,7 +214,8 @@ func (v *versionData) checkOperations(operations ...string) error {
 		invalid = append(invalid, k)
 	}
 
-	return fmt.Errorf("Invalid operation%s: %s", suffix, strings.Join(invalid, ", "))
+	return fmt.Errorf("Invalid operation%s: %s", suffix,
+		strings.Join(invalid, ", "))
 }
 
 func (v *versionData) apply(operations ...string) error {
@@ -222,12 +223,13 @@ func (v *versionData) apply(operations ...string) error {
 		n := parseOp(operations[i])
 		if t, ok := v.operations[n]; ok {
 			arg := ""
-			if strings.Index(n, "=") != -1 {
+			if strings.Contains(n, "=") {
 				arg = strings.SplitN(operations[i], "=", 2)[1]
 			}
 			t.op(arg)
 			if v.err != nil {
-				return fmt.Errorf("Operation \"%s\" failed with: %v", operations[i], v.err)
+				return fmt.Errorf("Operation \"%s\" failed with: %v",
+					operations[i], v.err)
 			}
 		}
 	}
@@ -236,7 +238,8 @@ func (v *versionData) apply(operations ...string) error {
 
 func fault(err error, message string, arg ...string) {
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "Error: %s%s: %s\n", message, strings.Join(arg, " "), err)
+		_, _ = fmt.Fprintf(os.Stderr, "Error: %s%s: %s\n",
+			message, strings.Join(arg, " "), err)
 		os.Exit(1)
 	}
 }
