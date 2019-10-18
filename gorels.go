@@ -23,19 +23,19 @@ var (
 
 type cmdDesc struct {
 	help string
-	cmd  func(string)
+	op   func(string)
 }
 
-type cmdMap map[string]cmdDesc
+type opMap map[string]cmdDesc
 
-func (c *cmdMap) add(name, help string, cmd func(string)) {
+func (c *opMap) add(name, help string, op func(string)) {
 	(*c)[name] = cmdDesc{
 		help: help,
-		cmd:  cmd,
+		op:   op,
 	}
 }
 
-func (c *cmdMap) help(out io.Writer) {
+func (c *opMap) help(out io.Writer) {
 	names := []string{}
 	for k := range *c {
 		names = append(names, k)
@@ -111,7 +111,7 @@ func (g *Git) CreateTag(version string) error {
 }
 
 type versionData struct {
-	commands cmdMap
+	operations opMap
 
 	debug   bool
 	message string
@@ -122,14 +122,14 @@ type versionData struct {
 
 func newVersionData(opts options.Options) *versionData {
 	ret := &versionData{
-		debug:   opts.IsSet("debug"),
+		debug: opts.IsSet("debug"),
 		git: Git{
 			Git:    "git",
 			Commit: "HEAD",
 			DryRun: opts.IsSet("dryrun"),
 		},
 	}
-	t := make(cmdMap)
+	t := make(opMap)
 
 	t.add("git=", "Git program to use.", func(s string) {
 		ret.git.Git = s
@@ -158,16 +158,16 @@ func newVersionData(opts options.Options) *versionData {
 	})
 	t.add("amend", "Amend the current tag.", func(s string) {
 	})
-	ret.commands = t
+	ret.operations = t
 
 	return ret
 }
 
-func (v *versionData) checkCommands(commands ...string) error {
+func (v *versionData) checkOperations(operations ...string) error {
 	return nil
 }
 
-func (v *versionData) apply(commands ...string) error {
+func (v *versionData) apply(operations ...string) error {
 	return nil
 }
 
@@ -190,9 +190,9 @@ func main() {
 
 	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	optVersion := fs.Bool("version", false, "Display version.")
-	optList := fs.Bool("list", false, "List commands.")
+	optList := fs.Bool("list", false, "List operations.")
 	optDebug := fs.Bool("debug", false, "Enable debug output.")
-	optDryRun := fs.Bool("dryrun", false, "Don't actually run any commands. Implies -debug.")
+	optDryRun := fs.Bool("dryrun", false, "Don't actually run any operations. Implies -debug.")
 	optVersionPrefix := fs.String("version-prefix", "v", "String prefix to be stripped when evaluating git version tags.")
 
 	fs.Usage = func() {
@@ -222,7 +222,7 @@ func main() {
 	vd := newVersionData(opts)
 
 	if *optList {
-		vd.commands.help(os.Stdout)
+		vd.operations.help(os.Stdout)
 		os.Exit(0)
 	}
 	args := fs.Args()
@@ -231,8 +231,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = vd.checkCommands(args...)
-	fault(err, "Validating given commands failed")
+	err = vd.checkOperations(args...)
+	fault(err, "Validating given operations failed")
 
 	vd.git.GetTags()
 	fmt.Println(vd.git.Tags)
