@@ -72,11 +72,12 @@ func cmdStrOneLine(args ...string) string {
 }
 
 type Git struct {
-	Git       string
-	Commit    string
-	TagPrefix string
-	Tags      []string
-	DryRun    bool
+	Git        string
+	Commit     string
+	TagPrefix  string
+	Tags       []string
+	DryRun     bool
+	debugPrint func(...interface{})
 }
 
 func (g *Git) GetTags() error {
@@ -106,9 +107,35 @@ func (g *Git) GetTags() error {
 	return nil
 }
 
-func (g *Git) CreateTag(version string) error {
+func (g *Git) GetShortLog(start, end string) (string, error) {
+	commitrange := start + ".." + end
+	if start == "" {
+		commitrange = end
+	}
+	return cmdStr(g.Git, "shortlog", commitrange)
+}
 
-	return nil
+func (g *Git) CreateTag(version, message string) error {
+	prevtag := ""
+	if len(g.Tags) > 0 {
+		prevtag = g.Tags[0]
+	}
+	shortlog, err := g.GetShortLog(prevtag, g.Commit)
+	if err != nil {
+		return err
+	}
+
+	message = fmt.Sprintf("%s\n\n%s", message, shortlog)
+
+	cmdline := []string{g.Git, "tag", "--annotate", "-m", message, version,
+		g.Commit}
+	g.debugPrint("Running:", strings.Join(cmdline, " "))
+
+	if g.DryRun {
+		return nil
+	}
+	_, err = cmdStr(cmdline...)
+	return err
 }
 
 type versionData struct {
@@ -125,10 +152,11 @@ func newVersionData(opts options.Options) *versionData {
 	ret := &versionData{
 		debug: opts.IsSet("debug"),
 		git: Git{
-			Git:       "git",
-			Commit:    "HEAD",
-			TagPrefix: "v",
-			DryRun:    opts.IsSet("dryrun"),
+			Git:        "git",
+			Commit:     "HEAD",
+			TagPrefix:  "v",
+			DryRun:     opts.IsSet("dryrun"),
+			debugPrint: func(...interface{}) {},
 		},
 	}
 	t := make(opMap)
@@ -139,6 +167,10 @@ func newVersionData(opts options.Options) *versionData {
 		}
 		fmt.Printf(">> ")
 		fmt.Println(args...)
+	}
+
+	if ret.debug {
+		ret.git.debugPrint = debugPrint
 	}
 
 	t.add("git=", "Git program to use.", func(s string) {
@@ -179,6 +211,7 @@ func newVersionData(opts options.Options) *versionData {
 		if ret.message != "" {
 			debugPrint("Injecting message:", ret.message)
 		}
+		ret.git.CreateTag(verstr, ret.message)
 		ret.message = ""
 	})
 	t.add("amend", "Amend the current tag.", func(s string) {
@@ -236,6 +269,29 @@ func (v *versionData) apply(operations ...string) error {
 	return nil
 }
 
+func (v *versionData) getPreviousVersion() error {
+	err := v.git.GetTags()
+	if err != nil {
+		return fmt.Errorf("Getting git tags failed with: %v", err)
+	}
+
+	if len(v.git.Tags) == 0 {
+		return nil
+	}
+
+	prevVersion := v.git.Tags[0]
+
+	v.git.debugPrint("Found", prevVersion, "as previous version")
+
+	err = v.version.Set(prevVersion)
+	if err != nil {
+		return fmt.Errorf("Parsing previous version \"%s\" failed with: %v",
+			err)
+	}
+
+	return nil
+}
+
 func fault(err error, message string, arg ...string) {
 	if err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Error: %s%s: %s\n",
@@ -280,6 +336,7 @@ func main() {
 
 	if *optDryRun {
 		opts.Set("dryrun", "t")
+		opts.Set("debug", "t")
 	}
 
 	vd := newVersionData(opts)
@@ -297,9 +354,9 @@ func main() {
 	err = vd.checkOperations(args...)
 	fault(err, "Validating given operations failed")
 
+	err = vd.getPreviousVersion()
+	fault(err, "Getting previous version failed")
+
 	err = vd.apply(args...)
 	fault(err, "Applying operations failed")
-
-	vd.git.GetTags()
-	fmt.Println(vd.git.Tags)
 }
