@@ -7,15 +7,12 @@ import (
 	"strings"
 )
 
-// Contractual wrapper around external semantic versioning library
-
 var (
 	// Regular expression for parsing semver from https://semver.org/
 	semverRe = regexp.MustCompile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$")
 )
 
 type SemVer struct {
-	// version semver.Version
 	major      uint64
 	minor      uint64
 	patch      uint64
@@ -24,7 +21,6 @@ type SemVer struct {
 }
 
 func (v *SemVer) String() string {
-	// return v.version.String()
 	extra := ""
 	if v.prerelease != "" {
 		extra = extra + "-" + v.prerelease
@@ -43,9 +39,6 @@ func (v *SemVer) Set(version string) error {
 	if len(components) == 0 {
 		return fmt.Errorf("Invalid semantic version: %s", version)
 	}
-
-	// fmt.Println(versions)
-	fmt.Println(components)
 
 	parseUint := func(s string) uint64 {
 		ret, err := strconv.ParseUint(s, 10, 64)
