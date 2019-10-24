@@ -327,7 +327,7 @@ func main() {
 	opt(&optVersion, "version", "v", "Display version.")
 	opt(&optList, "list", "l", "List operations.")
 	opt(&optDebug, "debug", "", "Enable debug output.")
-	opt(&optDryRun, "dryrun", "", "Don't actually run any operations. Implies -debug.")
+	opt(&optDryRun, "dryrun", "d", "Don't actually run any operations. Implies -debug.")
 
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, "%s: Tag commits with semantic versions\n\n", os.Args[0])
