@@ -286,7 +286,7 @@ func (v *versionData) getPreviousVersion() error {
 	err = v.version.Set(prevVersion)
 	if err != nil {
 		return fmt.Errorf("Parsing previous version \"%s\" failed with: %v",
-			err)
+			prevVersion, err)
 	}
 
 	return nil
