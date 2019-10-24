@@ -193,6 +193,14 @@ func newVersionData(opts options.Options) *versionData {
 		debugPrint("Setting version to", s)
 		ret.err = ret.version.Set(s)
 	})
+	t.add("set-prerelease=", "Set version pre-release field.", func(s string) {
+		debugPrint("Setting pre-release to", s)
+		ret.version.SetPreRelease(s)
+	})
+	t.add("set-build=", "Set version build field.", func(s string) {
+		debugPrint("Setting build to", s)
+		ret.version.SetBuild(s)
+	})
 	t.add("commit=", "Commit to operate on. Default: HEAD", func(s string) {
 		debugPrint("Setting git commit to:", s)
 		ret.git.Commit = s
