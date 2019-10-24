@@ -287,7 +287,7 @@ func (v *versionData) getPreviousVersion() error {
 		return nil
 	}
 
-	prevVersion := v.git.Tags[0]
+	prevVersion := strings.TrimPrefix(v.git.Tags[0], v.git.TagPrefix)
 
 	v.git.debugPrint("Found", prevVersion, "as previous version")
 
