@@ -310,11 +310,24 @@ func main() {
 	opts.Set("program-buildgoos", buildGOOS)
 	opts.Set("program-buildgoarch", buildGOARCH)
 
+	var (
+		optVersion = false
+		optList = false
+		optDebug = false
+		optDryRun = false
+	)
+
 	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	optVersion := fs.Bool("version", false, "Display version.")
-	optList := fs.Bool("list", false, "List operations.")
-	optDebug := fs.Bool("debug", false, "Enable debug output.")
-	optDryRun := fs.Bool("dryrun", false, "Don't actually run any operations. Implies -debug.")
+	opt := func(optvar *bool, longflg, flg, help string) {
+		fs.BoolVar(optvar, longflg, false, help)
+		if flg != "" {
+			fs.BoolVar(optvar, flg, false, help + " (shorthand)")
+		}
+	}
+	opt(&optVersion, "version", "v", "Display version.")
+	opt(&optList, "list", "l", "List operations.")
+	opt(&optDebug, "debug", "", "Enable debug output.")
+	opt(&optDryRun, "dryrun", "", "Don't actually run any operations. Implies -debug.")
 
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, "%s: Tag commits with semantic versions\n\n", os.Args[0])
@@ -325,23 +338,23 @@ func main() {
 	err := fs.Parse(os.Args[1:])
 	fault(err, "Parsing the command line failed")
 
-	if *optVersion {
+	if optVersion {
 		fmt.Println(options.VersionString(opts))
 		os.Exit(0)
 	}
 
-	if *optDebug {
+	if optDebug {
 		opts.Set("debug", "t")
 	}
 
-	if *optDryRun {
+	if optDryRun {
 		opts.Set("dryrun", "t")
 		opts.Set("debug", "t")
 	}
 
 	vd := newVersionData(opts)
 
-	if *optList {
+	if optList {
 		vd.operations.help(os.Stdout)
 		os.Exit(0)
 	}
