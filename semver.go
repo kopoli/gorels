@@ -9,7 +9,7 @@ import (
 
 var (
 	// Regular expression for parsing semver from https://semver.org/
-	semverRe = regexp.MustCompile("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$")
+	semverRe = regexp.MustCompile(`^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$`)
 )
 
 type SemVer struct {
@@ -35,10 +35,10 @@ func (v *SemVer) Set(version string) error {
 	version = strings.TrimSpace(version)
 
 	versions := semverRe.FindAllStringSubmatch(version, 1)
-	components := versions[0]
-	if len(components) == 0 {
+	if len(versions) == 0 {
 		return fmt.Errorf("Invalid semantic version: %s", version)
 	}
+	components := versions[0]
 
 	parseUint := func(s string) uint64 {
 		ret, err := strconv.ParseUint(s, 10, 64)
