@@ -179,15 +179,15 @@ func newVersionData(opts options.Options) *versionData {
 	})
 	t.add("bump-major", "Bump the major version number.", func(s string) {
 		debugPrint("Bumping major version")
-		ret.err = ret.version.BumpMajor()
+		ret.version.BumpMajor()
 	})
 	t.add("bump-minor", "Bump the minor version number.", func(s string) {
 		debugPrint("Bumping minor version")
-		ret.err = ret.version.BumpMinor()
+		ret.version.BumpMinor()
 	})
 	t.add("bump-patch", "Bump the patch level version number.", func(s string) {
 		debugPrint("Bumping patch level")
-		ret.err = ret.version.BumpPatch()
+		ret.version.BumpPatch()
 	})
 	t.add("set-version=", "Set explicit version.", func(s string) {
 		debugPrint("Setting version to", s)
