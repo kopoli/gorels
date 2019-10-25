@@ -173,6 +173,10 @@ func newVersionData(opts options.Options) *versionData {
 		ret.git.debugPrint = debugPrint
 	}
 
+	if ret.git.DryRun {
+		debugPrint("Dry-run enabled. Not applying any changes.")
+	}
+
 	t.add("git=", "Git program to use.", func(s string) {
 		debugPrint("Setting git to", s)
 		ret.git.Git = s
