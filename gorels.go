@@ -72,12 +72,12 @@ func cmdStrOneLine(args ...string) string {
 }
 
 type Git struct {
-	Git        string
-	Commit     string
-	TagPrefix  string
-	Tags       []string
-	DryRun     bool
-	debugPrint func(...interface{})
+	Git          string
+	Commit       string
+	TagPrefix    string
+	Tags         []string
+	DryRun       bool
+	verbosePrint func(...interface{})
 }
 
 func (g *Git) GetTags() error {
@@ -129,7 +129,7 @@ func (g *Git) CreateTag(version, message string) error {
 
 	cmdline := []string{g.Git, "tag", "--annotate", "-m", message, version,
 		g.Commit}
-	g.debugPrint("Running:", strings.Join(cmdline, " "))
+	g.verbosePrint("Running:", strings.Join(cmdline, " "))
 
 	if g.DryRun {
 		return nil
@@ -141,7 +141,7 @@ func (g *Git) CreateTag(version, message string) error {
 type versionData struct {
 	operations opMap
 
-	debug   bool
+	verbose bool
 	message string
 	version SemVer
 	err     error
@@ -150,78 +150,78 @@ type versionData struct {
 
 func newVersionData(opts options.Options) *versionData {
 	ret := &versionData{
-		debug: opts.IsSet("debug"),
+		verbose: opts.IsSet("verbose"),
 		git: Git{
-			Git:        "git",
-			Commit:     "HEAD",
-			TagPrefix:  "v",
-			DryRun:     opts.IsSet("dryrun"),
-			debugPrint: func(...interface{}) {},
+			Git:          "git",
+			Commit:       "HEAD",
+			TagPrefix:    "v",
+			DryRun:       opts.IsSet("dryrun"),
+			verbosePrint: func(...interface{}) {},
 		},
 	}
 	t := make(opMap)
 
-	debugPrint := func(args ...interface{}) {
-		if !ret.debug {
+	verbosePrint := func(args ...interface{}) {
+		if !ret.verbose {
 			return
 		}
 		fmt.Printf(">> ")
 		fmt.Println(args...)
 	}
 
-	if ret.debug {
-		ret.git.debugPrint = debugPrint
+	if ret.verbose {
+		ret.git.verbosePrint = verbosePrint
 	}
 
 	if ret.git.DryRun {
-		debugPrint("Dry-run enabled. Not applying any changes.")
+		verbosePrint("Dry-run enabled. Not applying any changes.")
 	}
 
 	t.add("git=", "Git program to use.", func(s string) {
-		debugPrint("Setting git to", s)
+		verbosePrint("Setting git to", s)
 		ret.git.Git = s
 	})
 	t.add("bump-major", "Bump the major version number.", func(s string) {
-		debugPrint("Bumping major version")
+		verbosePrint("Bumping major version")
 		ret.version.BumpMajor()
 	})
 	t.add("bump-minor", "Bump the minor version number.", func(s string) {
-		debugPrint("Bumping minor version")
+		verbosePrint("Bumping minor version")
 		ret.version.BumpMinor()
 	})
 	t.add("bump-patch", "Bump the patch level version number.", func(s string) {
-		debugPrint("Bumping patch level")
+		verbosePrint("Bumping patch level")
 		ret.version.BumpPatch()
 	})
 	t.add("set-version=", "Set explicit version.", func(s string) {
-		debugPrint("Setting version to", s)
+		verbosePrint("Setting version to", s)
 		ret.err = ret.version.Set(s)
 	})
 	t.add("set-prerelease=", "Set version pre-release field.", func(s string) {
-		debugPrint("Setting pre-release to", s)
+		verbosePrint("Setting pre-release to", s)
 		ret.version.SetPreRelease(s)
 	})
 	t.add("set-build=", "Set version build field.", func(s string) {
-		debugPrint("Setting build to", s)
+		verbosePrint("Setting build to", s)
 		ret.version.SetBuild(s)
 	})
 	t.add("commit=", "Commit to operate on. Default: HEAD", func(s string) {
-		debugPrint("Setting git commit to:", s)
+		verbosePrint("Setting git commit to:", s)
 		ret.git.Commit = s
 	})
 	t.add("message=", "Message to inject into the tag", func(s string) {
-		debugPrint("Injecting message to tag:", s)
+		verbosePrint("Injecting message to tag:", s)
 		ret.message = s
 	})
 	t.add("set-tag-prefix=", "Set tag prefix. Default 'v'.", func(s string) {
-		debugPrint("Setting the tag prefix to:", s)
+		verbosePrint("Setting the tag prefix to:", s)
 		ret.git.TagPrefix = s
 	})
 	t.add("tag", "Create a tag.", func(s string) {
 		verstr := ret.git.TagPrefix + ret.version.String()
-		debugPrint("Creating the git tag:", verstr)
+		verbosePrint("Creating the git tag:", verstr)
 		if ret.message != "" {
-			debugPrint("Injecting message:", ret.message)
+			verbosePrint("Injecting message:", ret.message)
 		}
 		ret.git.CreateTag(verstr, ret.message)
 		ret.message = ""
@@ -293,7 +293,7 @@ func (v *versionData) getPreviousVersion() error {
 
 	prevVersion := strings.TrimPrefix(v.git.Tags[0], v.git.TagPrefix)
 
-	v.git.debugPrint("Found", prevVersion, "as previous version")
+	v.git.verbosePrint("Found", prevVersion, "as previous version")
 
 	err = v.version.Set(prevVersion)
 	if err != nil {
@@ -324,22 +324,22 @@ func main() {
 
 	var (
 		optVersion = false
-		optList = false
-		optDebug = false
-		optDryRun = false
+		optList    = false
+		optVerbose = false
+		optDryRun  = false
 	)
 
 	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	opt := func(optvar *bool, longflg, flg, help string) {
 		fs.BoolVar(optvar, longflg, false, help)
 		if flg != "" {
-			fs.BoolVar(optvar, flg, false, help + " (shorthand)")
+			fs.BoolVar(optvar, flg, false, help+" (shorthand)")
 		}
 	}
 	opt(&optVersion, "version", "v", "Display version.")
 	opt(&optList, "list", "l", "List operations.")
-	opt(&optDebug, "debug", "", "Enable debug output.")
-	opt(&optDryRun, "dryrun", "d", "Don't actually run any operations. Implies -debug.")
+	opt(&optVerbose, "verbose", "V", "Enable verbose output.")
+	opt(&optDryRun, "dryrun", "D", "Don't actually run any operations. Implies -verbose.")
 
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, "%s: Tag commits with semantic versions\n\n", os.Args[0])
@@ -355,13 +355,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	if optDebug {
-		opts.Set("debug", "t")
+	if optVerbose {
+		opts.Set("verbose", "t")
 	}
 
 	if optDryRun {
 		opts.Set("dryrun", "t")
-		opts.Set("debug", "t")
+		opts.Set("verbose", "t")
 	}
 
 	vd := newVersionData(opts)
