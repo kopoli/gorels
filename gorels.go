@@ -333,7 +333,8 @@ func main() {
 	opt := func(optvar *bool, longflg, flg, help string) {
 		fs.BoolVar(optvar, longflg, false, help)
 		if flg != "" {
-			fs.BoolVar(optvar, flg, false, help+" (shorthand)")
+			help := fmt.Sprintf("%s (shorthand for -%s)", help, longflg)
+			fs.BoolVar(optvar, flg, false, help)
 		}
 	}
 	opt(&optVersion, "version", "v", "Display version.")
