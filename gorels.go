@@ -384,4 +384,6 @@ func main() {
 
 	err = vd.apply(args...)
 	fault(err, "Applying operations failed")
+
+	os.Exit(0)
 }
