@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 	"text/tabwriter"
@@ -76,6 +77,7 @@ type Git struct {
 	Commit       string
 	TagPrefix    string
 	Tags         []string
+	RepoName string
 	DryRun       bool
 	verbosePrint func(...interface{})
 }
@@ -115,6 +117,17 @@ func (g *Git) GetShortLog(start, end string) (string, error) {
 	return cmdStr(g.Git, "shortlog", commitrange)
 }
 
+func (g *Git) GetRepoName() error {
+	s := cmdStrOneLine(g.Git, "rev-parse", "--show-toplevel")
+	if s == "" {
+		return fmt.Errorf("Could not determine repo root directory")
+	}
+
+	g.RepoName = filepath.Base(s)
+
+	return nil
+}
+
 func (g *Git) CreateTag(version, message string) error {
 	prevtag := ""
 	if len(g.Tags) > 0 {
@@ -123,6 +136,10 @@ func (g *Git) CreateTag(version, message string) error {
 	shortlog, err := g.GetShortLog(prevtag, g.Commit)
 	if err != nil {
 		return err
+	}
+
+	if message == "" {
+		message = fmt.Sprintf("%s %s", g.RepoName, version)
 	}
 
 	message = fmt.Sprintf("%s\n\n%s", message, shortlog)
@@ -282,7 +299,12 @@ func (v *versionData) apply(operations ...string) error {
 }
 
 func (v *versionData) getPreviousVersion() error {
-	err := v.git.GetTags()
+	err := v.git.GetRepoName()
+	if err != nil {
+		return err
+	}
+
+	err = v.git.GetTags()
 	if err != nil {
 		return fmt.Errorf("Getting git tags failed with: %v", err)
 	}
