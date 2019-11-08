@@ -51,7 +51,7 @@ func (c *opMap) help(out io.Writer) {
 	for i := range names {
 		printCmd(i)
 	}
-	wr.Flush()
+	_ = wr.Flush()
 }
 
 func cmdStr(args ...string) (string, error) {
@@ -240,7 +240,7 @@ func newVersionData(opts options.Options) *versionData {
 		if ret.message != "" {
 			verbosePrint("Injecting message:", ret.message)
 		}
-		ret.git.CreateTag(verstr, ret.message)
+		ret.err = ret.git.CreateTag(verstr, ret.message)
 		ret.message = ""
 	})
 	t.add("amend", "Amend the current tag.", func(s string) {
