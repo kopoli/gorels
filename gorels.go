@@ -44,7 +44,7 @@ func (c *opMap) help(out io.Writer) {
 	sort.Strings(names)
 
 	wr := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(wr, "Commands:")
+	fmt.Fprintln(wr, "Operations:")
 	printCmd := func(i int) {
 		fmt.Fprintf(wr, "  %s\t%s\n", names[i], (*c)[names[i]].help)
 	}
