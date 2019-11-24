@@ -243,8 +243,6 @@ func newVersionData(opts options.Options) *versionData {
 		ret.err = ret.git.CreateTag(verstr, ret.message)
 		ret.message = ""
 	})
-	t.add("amend", "Amend the current tag.", func(s string) {
-	})
 	ret.operations = t
 
 	return ret
