@@ -11,7 +11,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/kopoli/gorels/options"
+	"github.com/kopoli/appkit"
 )
 
 var (
@@ -165,7 +165,7 @@ type versionData struct {
 	git     Git
 }
 
-func newVersionData(opts options.Options) *versionData {
+func newVersionData(opts appkit.Options) *versionData {
 	ret := &versionData{
 		verbose: opts.IsSet("verbose"),
 		git: Git{
@@ -334,7 +334,7 @@ func fault(err error, message string, arg ...string) {
 
 func main() {
 
-	opts := options.New()
+	opts := appkit.NewOptions()
 
 	opts.Set("program-name", os.Args[0])
 	opts.Set("program-version", progVersion)
@@ -372,7 +372,7 @@ func main() {
 	fault(err, "Parsing the command line failed")
 
 	if optVersion {
-		fmt.Println(options.VersionString(opts))
+		fmt.Println(appkit.VersionString(opts))
 		os.Exit(0)
 	}
 
