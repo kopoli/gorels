@@ -1,5 +1,7 @@
 package main
 
+//go:generate licrep -o licenses.go
+
 import (
 	"flag"
 	"fmt"
@@ -77,7 +79,7 @@ type Git struct {
 	Commit       string
 	TagPrefix    string
 	Tags         []string
-	RepoName string
+	RepoName     string
 	DryRun       bool
 	verbosePrint func(...interface{})
 }
@@ -343,10 +345,11 @@ func main() {
 	opts.Set("program-buildgoarch", buildGOARCH)
 
 	var (
-		optVersion = false
-		optList    = false
-		optVerbose = false
-		optDryRun  = false
+		optVersion  = false
+		optList     = false
+		optVerbose  = false
+		optDryRun   = false
+		optLicenses = false
 	)
 
 	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
@@ -361,6 +364,8 @@ func main() {
 	opt(&optList, "list", "l", "List operations.")
 	opt(&optVerbose, "verbose", "V", "Enable verbose output.")
 	opt(&optDryRun, "dryrun", "D", "Don't actually run any operations. Implies -verbose.")
+	opt(&optLicenses, "licenses", "",
+		fmt.Sprintf("Print the licenses of %s.", opts.Get("program-name", "gorels")))
 
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, "%s: Tag commits with semantic versions\n\n", os.Args[0])
@@ -373,6 +378,15 @@ func main() {
 
 	if optVersion {
 		fmt.Println(appkit.VersionString(opts))
+		os.Exit(0)
+	}
+
+	if optLicenses {
+		l, err := GetLicenses()
+		fault(err, "Getting licenses failed")
+		s, err := appkit.LicenseString(l)
+		fault(err, "Interpreting licenses failed")
+		fmt.Print(s)
 		os.Exit(0)
 	}
 
