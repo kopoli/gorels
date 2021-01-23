@@ -163,6 +163,7 @@ type versionData struct {
 	verbose bool
 	message string
 	version SemVer
+	verSet bool
 	err     error
 	git     Git
 }
@@ -196,33 +197,55 @@ func newVersionData(opts appkit.Options) *versionData {
 		verbosePrint("Dry-run enabled. Not applying any changes.")
 	}
 
+	prevVersionSet := func() error {
+		if ret.verSet {
+			return nil
+		}
+
+		ret.verSet = true
+		ret.err = ret.getPreviousVersion()
+		return ret.err
+	}
+
 	t.add("git=", "Git program to use.", func(s string) {
 		verbosePrint("Setting git to", s)
 		ret.git.Git = s
 	})
 	t.add("bump-major", "Bump the major version number.", func(s string) {
 		verbosePrint("Bumping major version")
+		if prevVersionSet() != nil {
+			return
+		}
 		ret.version.BumpMajor()
 	})
 	t.add("bump-minor", "Bump the minor version number.", func(s string) {
 		verbosePrint("Bumping minor version")
+		if prevVersionSet() != nil {
+			return
+		}
 		ret.version.BumpMinor()
 	})
 	t.add("bump-patch", "Bump the patch level version number.", func(s string) {
 		verbosePrint("Bumping patch level")
+		if prevVersionSet() != nil {
+			return
+		}
 		ret.version.BumpPatch()
 	})
 	t.add("set-version=", "Set explicit version.", func(s string) {
 		verbosePrint("Setting version to", s)
 		ret.err = ret.version.Set(s)
+		ret.verSet = true
 	})
 	t.add("set-prerelease=", "Set version pre-release field.", func(s string) {
 		verbosePrint("Setting pre-release to", s)
 		ret.version.SetPreRelease(s)
+		ret.verSet = true
 	})
 	t.add("set-build=", "Set version build field.", func(s string) {
 		verbosePrint("Setting build to", s)
 		ret.version.SetBuild(s)
+		ret.verSet = true
 	})
 	t.add("commit=", "Commit to operate on. Default: HEAD", func(s string) {
 		verbosePrint("Setting git commit to:", s)
@@ -237,6 +260,9 @@ func newVersionData(opts appkit.Options) *versionData {
 		ret.git.TagPrefix = s
 	})
 	t.add("tag", "Create a tag.", func(s string) {
+		if prevVersionSet() != nil {
+			return
+		}
 		verstr := ret.git.TagPrefix + ret.version.String()
 		verbosePrint("Creating the git tag:", verstr)
 		if ret.message != "" {
@@ -413,9 +439,6 @@ func main() {
 
 	err = vd.checkOperations(args...)
 	fault(err, "Validating given operations failed")
-
-	err = vd.getPreviousVersion()
-	fault(err, "Getting previous version failed")
 
 	err = vd.apply(args...)
 	fault(err, "Applying operations failed")
