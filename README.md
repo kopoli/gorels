@@ -13,8 +13,6 @@ $ go get github.com/kopoli/gorels
 This automates the version bumping and tag creation when dealing with git
 repositories.
 
-This is quite experimental as of yet and the abstractions are leaky.
-
 For example creating the `v0.2.1` tag for this repository can be done with the
 following:
 
