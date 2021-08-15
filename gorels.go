@@ -394,7 +394,7 @@ func main() {
 		fmt.Sprintf("Print the licenses of %s.", opts.Get("program-name", "gorels")))
 
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "%s: Tag commits with semantic versions\n\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] OPERATION [...]\n\nTag commits with semantic versions\n\n", os.Args[0])
 		fmt.Fprintln(os.Stderr, "Command line options:")
 		fs.PrintDefaults()
 	}
