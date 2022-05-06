@@ -163,7 +163,7 @@ type versionData struct {
 	verbose bool
 	message string
 	version SemVer
-	verSet bool
+	verSet  bool
 	err     error
 	git     Git
 }
@@ -378,11 +378,13 @@ func main() {
 		optLicenses = false
 	)
 
-	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	base := appkit.NewCommand(nil, "", "Tag commits with semantic version")
+	base.ArgumentHelp = "OPERATION [...]"
+
+	fs := base.Flags
 	opt := func(optvar *bool, longflg, flg, help string) {
 		fs.BoolVar(optvar, longflg, false, help)
 		if flg != "" {
-			help := fmt.Sprintf("%s (shorthand for -%s)", help, longflg)
 			fs.BoolVar(optvar, flg, false, help)
 		}
 	}
@@ -393,13 +395,11 @@ func main() {
 	opt(&optLicenses, "licenses", "",
 		fmt.Sprintf("Print the licenses of %s.", opts.Get("program-name", "gorels")))
 
-	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [OPTIONS] OPERATION [...]\n\nTag commits with semantic versions\n\n", os.Args[0])
-		fmt.Fprintln(os.Stderr, "Command line options:")
-		fs.PrintDefaults()
+	err := base.Parse(os.Args[1:], opts)
+	if err == flag.ErrHelp {
+		os.Exit(0)
 	}
 
-	err := fs.Parse(os.Args[1:])
 	fault(err, "Parsing the command line failed")
 
 	if optVersion {
