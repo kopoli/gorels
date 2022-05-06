@@ -44,7 +44,7 @@ func (v *SemVer) Set(version string) error {
 		ret, err := strconv.ParseUint(s, 10, 64)
 		if err != nil {
 			// This would mean the regexp parsed an improper number
-			msg := fmt.Sprintf("Internal error on parsing version: %s", s)
+			msg := fmt.Sprintf("Internal error on parsing version '%s': %v", s, err)
 			panic(msg)
 		}
 		return ret
