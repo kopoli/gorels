@@ -238,11 +238,17 @@ func newVersionData(opts appkit.Options) *versionData {
 		ret.verSet = true
 	})
 	t.add("set-prerelease=", "Set version pre-release field.", func(s string) {
+		if prevVersionSet() != nil {
+			return
+		}
 		verbosePrint("Setting pre-release to", s)
 		ret.version.SetPreRelease(s)
 		ret.verSet = true
 	})
 	t.add("set-build=", "Set version build field.", func(s string) {
+		if prevVersionSet() != nil {
+			return
+		}
 		verbosePrint("Setting build to", s)
 		ret.version.SetBuild(s)
 		ret.verSet = true
